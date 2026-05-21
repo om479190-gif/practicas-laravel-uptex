@@ -7,8 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {
-    use HasFactory; // 2. Agrega esta línea justo al inicio de la clase
+    use HasFactory;
 
+    // 1. Agrega esta línea para permitir que se guarden estos campos:
+    protected $fillable = ['title', 'content', 'category_id', 'published_at'];
+
+    // ... aquí abajo dejas todas tus funciones que ya tenías (user, category, attachments, etc.)
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
     // ... aquí abajo dejas la función posts() que ya tenías guardada
     public function posts()
     {
@@ -37,4 +45,5 @@ class Post extends Model
     {
         return $this->hasMany(Attachment::class);
     }
+    // Conexión con el Usuario (Autor)
 }

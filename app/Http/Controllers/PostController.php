@@ -6,7 +6,8 @@ use App\Models\Post;
 use App\Models\Attachment;
 use App\Http\Requests\StorePostWithAttachmentsRequest;
 use App\Services\FileService;
-
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 class PostController extends Controller
 {
     // Usamos el nuevo Request que permite archivos
@@ -41,12 +42,47 @@ class PostController extends Controller
     // Función para eliminar un archivo específico
     public function destroyAttachment(Attachment $attachment)
     {
-        // Validamos que el usuario sea el dueño del post para poder borrar el archivo
-        $this->authorize('update', $attachment->post);
+        // Usamos Gate en lugar de $this
+        Gate::authorize('update', $attachment->post);
 
         $fileService = new FileService();
         $fileService->deleteAttachment($attachment);
 
         return redirect()->back()->with('success', 'Archivo eliminado');
+    }
+    public function destroy(Post $post)
+    {
+        // 1. Verificamos permiso usando Gate
+        Gate::authorize('delete', $post);
+
+        // 2. Borramos el post 
+        $post->delete();
+        
+        Log::info("AUDITORIA: El usuario " . auth()->user()->name . " eliminó el post ID: " . $post->id);
+        // 3. Regresamos al dashboard
+        return redirect()->back()->with('success', 'Post eliminado correctamente.');
+    }
+    // Función para mostrar la pantalla de edición
+    public function edit(Post $post)
+    {
+        // Verificamos permiso
+        Gate::authorize('update', $post);
+        
+        return view('posts.edit', compact('post'));
+    }
+
+    // Función para guardar los cambios en la base de datos
+    public function update(\Illuminate\Http\Request $request, Post $post)
+    {
+        // Verificamos permiso
+        Gate::authorize('update', $post);
+
+        // Actualizamos los datos
+        $post->update([
+            'title'   => $request->title,
+            'content' => $request->content,
+        ]);
+        Log::info("AUDITORIA: El usuario " . auth()->user()->name . " actualizó el post ID: " . $post->id);
+        return redirect()->route('dashboard')->with('success', 'Post actualizado correctamente.');
     }
 }
